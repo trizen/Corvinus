@@ -1,0 +1,803 @@
+#!/usr/bin/perl
+
+use utf8;
+use 5.020;
+use experimental 'signatures';
+
+BEGIN {    # support for running Corvinus locally from everywhere
+    require File::Spec;
+    require File::Basename;
+    unshift @INC,
+      File::Spec->catdir(
+                         File::Basename::dirname(
+                                                   File::Spec->file_name_is_absolute(__FILE__)
+                                                 ? __FILE__
+                                                 : File::Spec->rel2abs(__FILE__)
+                                                ),
+                         File::Spec->updir,
+                         'lib'
+                        );
+}
+
+binmode STDIN,  ":utf8";
+binmode STDOUT, ":utf8";
+binmode STDERR, ":utf8" if $^P == 0;    # to work under Devel::* modules
+
+require Corvinus;
+
+my $name    = 'Corvinus';
+my $version = $Corvinus::VERSION;
+
+sub DUMP ()   { 0 }
+sub BUNDLE () { 1 }
+sub NATIVE () { 2 }
+
+my %args;
+if ($#ARGV != -1 and chr ord $ARGV[0] eq '-') {
+    require Getopt::Std;
+    Getopt::Std::getopts('e:E:d:Dho:ivHN:n:WwbcM:rR:tO:s:C', \%args);
+}
+
+# Help
+if (defined $args{h}) {
+    output_usage();
+    exit 0;
+}
+
+# Version
+if (defined $args{v}) {
+    output_version();
+    exit 0;
+}
+
+# Warnings
+if (defined $args{w}) {
+    $SIG{__WARN__} = sub {
+        require Carp;
+        Carp::cluck(@_);
+    };
+}
+elsif (defined $args{W}) {
+    $SIG{__DIE__} = $SIG{__WARN__} = sub {
+        require Carp;
+        Carp::confess(@_);
+    };
+}
+
+# Backend for Math::BigInt
+if (defined(my $type = $args{n})) {
+    load_math_backend($type);
+}
+
+# Number of spaces for indentation
+if (defined(my $num = $args{s})) {
+    $Corvinus::SPACES_INCR = int($num);
+}
+
+# Memoization
+if (defined(my $types = $args{M})) {
+    memoize_types($types);
+}
+
+# Interactive help
+if (defined $args{H}) {
+    help_interactive();
+    exit 0;
+}
+
+# Interactive coding
+if (defined $args{i}) {
+    code_interactive();
+    exit 0;
+}
+
+# Test mode
+if (defined $args{t}) {
+    my @argv = splice(@ARGV);
+    while (defined(my $script_name = shift @argv)) {
+
+        say "\n** Executing: $script_name";
+        say "-" x 80;
+
+        splice(@Corvinus::Exec::NAMESPACES);
+        my $exec   = Corvinus::Exec->new();
+        my $code   = read_script($script_name);
+        my $parser = new_parser(name => $script_name);
+        my $struct = eval { parse_code($parser, $code) };
+
+        my $slept = 0;
+        if ($@) {
+            warn "[ERROR] Can't parse the script `$script_name`: $@";
+            sleep 2;
+            $slept = 1;
+        }
+        else {
+            if (ref($struct) eq 'HASH') {
+                eval { $exec->execute($struct) };
+            }
+            else {
+                system($^X, '-e', $struct);
+            }
+        }
+
+        if (not($slept) and ($@ or (ref($struct) ne 'HASH' and $?))) {
+            warn "[ERROR] Error encountered on script `$script_name': $@";
+            sleep(2);
+        }
+
+        if (@argv) {
+            load_math_backend($args{n}) if defined($args{n});
+        }
+    }
+}
+
+# Default
+else {
+    my $script_name = '-';
+    $args{E} = $args{e} if exists($args{e});
+    my $code = exists($args{E})
+      ? do {
+        defined($args{E}) || die "No code specified for -E.\n";
+        $script_name = '-E';
+        require Encode;
+        Encode::decode_utf8($args{E});
+      }
+      : exists($args{d}) ? ''
+      : defined($ARGV[0]) && (-t STDIN or -f $ARGV[0]) ? do {
+        $script_name = shift @ARGV;
+        read_script($script_name);
+      }
+      : (-t STDIN) ? do {code_interactive(); exit }
+      : do { local $/; <STDIN> };
+
+    $code // exit 2;
+
+    # Bundle the code as a Perl program (without parsing it)
+    if (defined $args{b} and $code ne '') {
+        compile_to_perl(code => $code, type => BUNDLE, script_name => $script_name);
+    }
+    else {
+
+        my $struct;
+
+        # Code from a dumped parse-tree
+        if (defined $args{d}) {
+            $struct = do($args{d})
+              || die "Can't load the data structure from file '$args{d}': $!\n";
+        }
+        else {
+
+            # Parse the code
+            my $parser = new_parser(name => $script_name);
+            $struct = parse_code($parser, $code);
+        }
+
+        # Is structure actually Perl code?
+        my $is_perl_code = defined($args{O}) && $args{O} == 3;
+
+        # Dump the data structure
+        if (defined $args{D}) {
+            if ($is_perl_code) {
+                output($struct);
+            }
+            else {
+                dump_structure($struct);
+            }
+        }
+
+        # Deparse code
+        elsif (defined($args{r}) or defined($args{R})) {
+            if ($is_perl_code) {
+                output($struct);
+            }
+            else {
+                deparse_structure($struct);
+            }
+        }
+
+        # Compile the struct to a Perl program
+        elsif (defined $args{c}) {
+            if ($is_perl_code) {
+                compile_to_perl(code => $struct, type => NATIVE);
+            }
+            else {
+                compile_to_perl(ast => $struct, type => DUMP);
+            }
+        }
+
+        # Check the syntax
+        elsif (defined $args{C}) {
+            say "$script_name syntax OK";
+        }
+
+        # Execute the struct
+        else {
+            if ($is_perl_code) {
+                exec($^X, '-e', $struct);
+            }
+            else {
+                execute_struct($struct);
+            }
+        }
+    }
+}
+
+#
+## Subroutines
+#
+
+sub read_script {
+    my ($script_name) = @_;
+    open my $fh, '<:utf8', $script_name
+      or die qq{Nu pot citi fisierul "$script_name": $!\n};
+    local $/;
+    <$fh>;
+}
+
+sub new_parser {
+    my (%opt) = @_;
+    Corvinus::Parser->new(file_name   => $opt{name},
+                       script_name => $opt{name},);
+}
+
+sub optimize_struct {
+    my ($struct) = @_;
+
+    my $optimizer  = Corvinus::Optimizer->new;
+    my %opt_struct = $optimizer->optimize($struct);
+
+    return \%opt_struct;
+}
+
+sub parse_code {
+    my ($parser, $code) = @_;
+
+    my $struct = $parser->parse_script(code => \$code);
+
+    # Check for optimization
+    if (defined($args{O})) {
+
+        # Deparse the AST into code, then parse the code again
+        if ($args{O} >= 2) {
+            my $deparser = Corvinus::Deparse::Corvinus->new(namespaces => [@Corvinus::Exec::NAMESPACES]);
+            my $code = $deparser->deparse($struct);
+
+            $struct = Corvinus::Parser->new(
+                                         file_name   => $parser->{file_name},
+                                         script_name => $parser->{script_name},
+                                        )->parse_script(code => \$code);
+        }
+
+        # Optimize the AST
+        if ($args{O} >= 1) {
+            $struct = optimize_struct($struct);
+        }
+    }
+
+    return $struct;
+}
+
+sub load_math_backend {
+    my ($type) = @_;
+
+    require Math::BigInt;
+    require Math::BigRat;
+    require Math::BigFloat;
+
+    Math::BigInt->import(lib => $type);
+    Math::BigRat->import(lib => $type);
+    Math::BigFloat->import(lib => $type);
+}
+
+sub execute_struct {
+    my ($struct) = @_;
+    Corvinus::Types::Block::Code->new($struct)->run;
+}
+
+sub output_usage {
+    my %switches = (
+                    '-i'             => 'interactive mode',
+                    '-b'             => 'bundle the code as a stand-alone perl program',
+                    '-c'             => 'compile the code as a stand-alone perl program',
+                    '-C'             => 'check syntax only',
+                    '-d ast_file'    => 'load a dumped syntax tree',
+                    '-D'             => 'dump the syntax tree of a program',
+                    '-o output_file' => 'file where to dump the output',
+                    '-E program'     => 'one line of program',
+                    '-H'             => 'interactive help',
+                    '-n type'        => ['try to use a specific backend for Math::BigInt', 'valid types: GMP, Pari, FastCalc'],
+                    '-M type,type'   => ['memoize some expensive method calls', 'valid types: num, str, block, all'],
+                    '-O level'       => ['optimize the syntax-tree of a program', 'valid optimization levels: 0, 1, 2'],
+                    '-s int'         => 'the number of spaces used in code indentation',
+                    '-v'             => 'print version number and exit',
+                    '-t'             => 'treat all command-line arguments as scripts',
+                    '-r'             => 'parse and deparse a Corvinus program',
+                    '-w'             => 'enable warnings with stack backtrace',
+                    '-W'             => 'make warnings fatal (with stack backtrace)',
+                   );
+
+    require File::Basename;
+    my $basename = File::Basename::basename($0);
+
+    print <<"USAGE";
+
+Usage: $basename [switches] [--] [programfile] [arguments]
+
+USAGE
+
+    require List::Util;
+    my $max_width = List::Util::max(map { length } keys %switches);
+    $max_width += 4;
+
+    foreach my $key (sort { lc($a) cmp lc($b) or lc($b) cmp lc($a) or $b cmp $a } keys %switches) {
+        if (ref $switches{$key} eq 'ARRAY') {
+            printf "  %-${max_width}s%s\n", $key, $switches{$key}[0];
+            foreach my $i (1 .. $#{$switches{$key}}) {
+                printf "  %-${max_width}s%s\n", '', $switches{$key}[$i];
+            }
+        }
+        else {
+            printf "  %-${max_width}s%s\n", $key, $switches{$key};
+        }
+    }
+
+    print <<"END";
+
+Run '$basename -H' for interactive help.
+
+END
+}
+
+sub output_version {
+    print "$name $version\n";
+}
+
+sub help_interactive {
+
+    require File::Basename;
+    require File::Spec;
+
+    my %keywords = (
+                    if   => 'Corvinus::Types::Bool::If',
+                    '\\' => 'Corvinus::Variable::Ref',
+                    '*'  => 'Corvinus::Variable::Ref',
+                   );
+
+    require Encode;
+    require Term::ReadLine;
+    my $term = Term::ReadLine->new("$name $version -- help interactive mode");
+
+    print <<"HELP";
+Welcome to $name $version!  This is the interactive help utility.
+
+Enter the name of any object, keyword, or topic to get help on writing
+$name programs and using $name modules.  To quit this help utility, just
+type "quit".
+
+HELP
+
+    {
+        my $line = Encode::decode_utf8(
+            $term->readline('help> ')
+              // do { print "\n"; return }
+        );
+
+        if ($line eq 'quit' or $line eq 'q') {
+            return;
+        }
+
+        my $parser = new_parser(name => '-H');
+        $parser->{interactive} = 1;
+        my $struct = eval { $parser->parse_script(code => \$line) };
+
+        if ($@) {
+            warn $@;
+            redo;
+        }
+
+        my @refs = exists($keywords{$line}) ? $keywords{$line} : (map { ref($_) } eval { execute_struct($struct) });
+
+        foreach my $ref (@refs) {
+            $ref eq '' && do { warn "Not an object!\n"; next };
+            my $name = $ref =~ s{::}{/}gr;
+            my $file = $INC{$name . '.pm'};
+            my $pod;
+            foreach my $dir (@INC) {
+                if (-e (my $f = File::Spec->catfile($dir, $name . '.pod'))) {
+                    $pod = $f;
+                    last;
+                }
+            }
+            system 'perldoc', defined($pod) ? $pod : $ref;
+        }
+
+        redo;
+    }
+}
+
+sub code_interactive {
+    require Encode;
+    require Term::ReadLine;
+    my $term = Term::ReadLine->new("$name $version -- interactive mode");
+
+    my $exec = Corvinus::Exec->new;
+    my $parser = new_parser(name => '-i');
+    $parser->{interactive} = 1;
+
+    print qq{$name $version on $^O\n};
+    print qq{Type "help", "copyright" or "license" for more information.\n};
+
+    my $last_line = '';
+    {
+        my $line = do {
+            @ARGV
+              ? do {
+                my $file = shift(@ARGV);
+                open my $fh, '<:utf8', $file or do {
+                    warn "Can't open file `$file': $!\n";
+                    next;
+                };
+                local $/;
+                <$fh>;
+              }
+              : (Encode::decode_utf8($term->readline('>>> ') // return));
+        };
+
+        if ($line eq 'help') {
+            help_interactive();
+            redo;
+        }
+        elsif ($line eq '^') {
+            say $last_line;
+            redo;
+        }
+        elsif ($line eq '&') {
+            $line = $last_line;
+        }
+        elsif ($line eq 'q' or $line eq 'quit') {
+            return;
+        }
+        elsif ($line eq 'copyright') {
+            print <<'EOT';
+Copyright © 2013 Daniel Șuteu, Ioana Fălcușan
+Copyright © 2014-2015 Daniel Șuteu
+All Rights Reserved.
+EOT
+            redo;
+        }
+        elsif ($line eq 'license') {
+            print <<'EOT';
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+EOT
+            redo;
+        }
+
+        $last_line = $line;
+
+        my $struct = eval { $parser->parse_script(code => \$line) };
+
+        $@ && do {
+            warn $@;
+            $parser = new_parser(name => '-i');
+            $parser->{interactive} = 1;
+            redo;
+        };
+
+        if (defined($args{r}) or defined($args{R})) {
+            deparse_structure($struct);
+        }
+        else {
+            say ref($_) ne 'Corvinus::Types::Block::Code' && eval { $_->can('dump') } ? $_->dump : $_
+              for eval { $exec->execute($struct) };
+            warn $@ if $@;
+        }
+        redo;
+    }
+}
+
+sub _get_namespaces {
+    @Corvinus::Exec::NAMESPACES
+      ? ('push(@Corvinus::Exec::NAMESPACES, ' . join(', ', map { qq{"\Q$_\E"} } @Corvinus::Exec::NAMESPACES) . ");\n")
+      : '';
+}
+
+sub _get_loaded_modules {
+    my @modules;
+    foreach my $key (sort { length($a) <=> length($b) || $a cmp $b } keys %INC) {
+        if ($key =~ /^(Corvinus\b.*)\.pm\z/) {
+            push @modules, $1 =~ s{/}{::}gr;
+        }
+    }
+    return @modules;
+}
+
+sub deparse_structure($struct) {
+
+    my $lang = 'Corvinus';
+    my $module = "Corvinus::Deparse::\u\L$lang";
+    my $pm     = ($module =~ s{::}{/}gr . '.pm');
+
+    require $pm;
+    my $deparser = $module->new(namespaces => [@Corvinus::Exec::NAMESPACES]);
+    my $code = $deparser->deparse($struct);
+
+    output($code);
+}
+
+sub output {
+    my ($content) = @_;
+
+    my $out_fh = \*STDOUT;
+
+    if (defined $args{o}) {
+        open $out_fh, '>:utf8', $args{o}
+          or die "Can't open file '$args{o}' for write: $!\n";
+    }
+    print {$out_fh} $content;
+
+    return $out_fh;
+}
+
+sub dump_structure {
+    my ($struct) = @_;
+
+    eval { require Data::Dump };
+
+    if ($@) {
+        die qq{** "Data::Dump" is not installed!\n};
+    }
+    else {
+        my $out_fh = output('');
+
+        my $requirify = sub {
+            join('', map { "require '" . (s{::}{/}gr) . ".pm';\n" } @_);
+        };
+
+        print {$out_fh} _get_namespaces();
+        print {$out_fh} "use Math::BigFloat;\n";
+        print {$out_fh} $requirify->(_get_loaded_modules());
+        print {$out_fh} Data::Dump::pp($struct);
+    }
+}
+
+sub memoize_types {
+    my ($types) = @_;
+
+    my @types =
+      $types eq 'all'
+      ? ()
+      : split(/\s*,\s*/, $types);
+
+    my %known_types;
+    {
+        no strict 'refs';
+
+        # Init
+        $known_types{_init_} = sub {
+            require Memoize;
+        };
+
+        # String methods
+        $known_types{str} = sub {
+            require Corvinus::Types::String::String;
+            my $package = 'Corvinus::Types::String::String';
+            foreach my $method (qw(new)) {
+                Memoize::memoize($package . '::' . $method);
+            }
+        };
+
+        # Number methods
+        $known_types{num} = sub {
+            require Corvinus::Types::Number::Number;
+            my $package = 'Corvinus::Types::Number::Number';
+
+            my %ignore;
+            @ignore{
+                qw<
+                  ISA
+                  BEGIN
+                  get_value
+                  __ANON__
+                  GET_PERL_VALUE
+                  >
+            } = ();
+
+            foreach my $method (keys %{$package . '::'}) {
+                next if $method =~ /^\(/;          # skip overload methods
+                next if exists $ignore{$method};
+                Memoize::memoize($package . '::' . $method);
+            }
+        };
+
+        # Block methods
+        $known_types{block} = sub {
+            require Corvinus::Types::Block::Code;
+            my $package = 'Corvinus::Types::Block::Code';
+            foreach my $method ('call') {
+                Memoize::memoize($package . '::' . $method);
+            }
+        };
+    }
+
+    # Get the valid types
+    my @valid_types = @types
+      ? (
+        grep {
+            exists $known_types{$_} || do {
+                die "Invalid value '$_' for option '-M'!";
+                0;
+              }
+          } @types
+        )
+      : (grep { $_ ne '_init_' } keys %known_types);
+
+    # Init only if we have some valid types
+    if (@valid_types) {
+        $known_types{_init_}->();
+    }
+
+    # Memoize each category
+    foreach my $type (@valid_types) {
+        $known_types{$type}->();
+    }
+}
+
+sub compile_to_perl {
+    my (%opt) = @_;
+
+    if ($opt{type} == DUMP) {
+        eval { require Data::Dump };
+        if ($@) {
+            die qq{** "Data::Dump" is not installed!\n};
+        }
+    }
+
+    require File::Basename;
+    my $path = File::Basename::dirname($INC{'Corvinus.pm'});
+
+    my $package_content = <<"HEAD";
+#!$^X
+
+eval 'exec $^X  -S \$0 \${1+"\$@"}'
+    if 0; # not running under some shell
+
+binmode STDIN,  ":utf8";
+binmode STDOUT, ":utf8";
+binmode STDERR, ":utf8" if \$^P == 0;    # to work under Devel::* modules
+
+my %REQ;
+my %MODULE;
+HEAD
+
+    if ($opt{type} == NATIVE) {
+        $package_content .= "BEGIN { %MODULE = (\n";
+    }
+    else {
+        $package_content .= "%MODULE = (\n";
+    }
+
+    require File::Find;
+    File::Find::find(
+        {
+         no_chdir => 1,
+         wanted   => sub {
+             if (/\.pm\z/ and -f) {
+
+                 local $/;
+                 open my $fh, '<:utf8', $_
+                   or die "Can't open file `$_' for reading: $!";
+
+                 my $token   = tr/A-Za-z0-9/_/cr;
+                 my $content = <$fh>;
+
+                 if ($content =~ /^(?>##\h*)?package\h+([\w:]+)/) {
+                     $package_content .= qq{'$1' => };
+                 }
+                 else {
+                     die qq{ERROR: can't get the package name!};
+                 }
+
+                 $package_content .= qq{<<'${token}',\n};
+                 $package_content .= $content;
+                 $package_content .= "\n$token\n";
+
+                 close $fh;
+             }
+           }
+        } => $path
+    );
+
+    $package_content .= <<'FOOT';
+);
+
+sub load_module {
+    my ($name) = @_;
+    if (not exists $REQ{$name}) {
+        my $module = $name =~ s{::}{/}gr . '.pm';
+        if (exists $MODULE{$name} and not exists $INC{$module}) {
+             if ($MODULE{$name} =~ /^\h*use parent\s+qw\((.*?)\)/sm) {
+                load_module($_) for split(' ', $1);
+            }
+            $INC{$module} = 1;
+            eval($MODULE{$name});
+        }
+        else {
+            require $module;
+        }
+        $REQ{$name} = 1;
+    }
+    return 1;
+}
+
+FOOT
+
+    my $requirify = sub {
+        join('', map { "load_module('$_');\n" } @_);
+    };
+
+    if ($opt{type} == DUMP) {
+        $package_content .= "use Math::BigFloat;\n";
+        $package_content .= $requirify->(_get_loaded_modules());
+    }
+    elsif ($opt{type} == BUNDLE) {
+        $package_content .= $requirify->('Corvinus', 'Corvinus::Parser', 'Corvinus::Exec');
+    }
+
+    if ($opt{type} == NATIVE) {
+        $package_content .=
+          $requirify->(_get_loaded_modules(), 'Corvinus::Types::Number::Number', 'Corvinus::Types::Number::NumberFast');
+        $package_content .= "}\n\n";
+    }
+
+    my $out_fh = output('');
+    print {$out_fh} $package_content;
+
+    if ($opt{type} == DUMP) {
+        print {$out_fh} _get_namespaces;
+        print {$out_fh} "\nmy \$struct = ";
+        print {$out_fh} Data::Dump::pp($opt{ast});
+        print {$out_fh} ";\n";
+
+    }
+    elsif ($opt{type} == BUNDLE) {
+        print {$out_fh} <<"EOT"
+
+chomp(my \$code = <<'~/////////////////END-OF-CODE/////////////////~');
+$opt{code}
+~/////////////////END-OF-CODE/////////////////~
+
+my \$parser = Corvinus::Parser->new(file_name   => "\Q$opt{script_name}\E",
+                                script_name => "\Q$opt{script_name}\E",);
+
+my \$struct = \$parser->parse_script(code => \\\$code);
+EOT
+
+    }
+    elsif ($opt{type} == NATIVE) {
+        print {$out_fh} $opt{code};
+    }
+
+    if ($opt{type} == DUMP or $opt{type} == BUNDLE) {
+        print {$out_fh} <<"EXEC";
+
+#
+## Execute the data structure
+#
+
+Corvinus::Exec->new->execute(\$struct);
+EXEC
+    }
+}

@@ -139,7 +139,7 @@ package Corvinus::Sys::Sys {
         my ($self, $text) = @_;
 
         if (defined($text)) {
-            $text->print;
+            print $text;
         }
 
         Corvinus::Types::String::String->new(scalar unpack("A*", scalar <STDIN>));

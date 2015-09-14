@@ -87,6 +87,9 @@ scripts/determina_triunghiul.corvin
 scripts/factorial_iterativ.corvin
 scripts/Lingua/RO/Numeros.corvin
 scripts/lingua_ro.corvin
+scripts/media_numerelor.sf
+scripts/scrie_cifrele.sf
+scripts/suma_cifrelor.sf
 scripts/text_string.corvin
 scripts/valoara_maxima.corvin
 t/00-load.t

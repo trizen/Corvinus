@@ -162,6 +162,7 @@ package Corvinus::Types::Number::Number {
     }
 
     *x = \&multiply;
+    *multiplica = \&multiply;
 
     sub div {
         my ($self, $num) = @_;
@@ -260,7 +261,7 @@ package Corvinus::Types::Number::Number {
     }
 
     *upto = \&to;
-    *upTo = \&to;
+    *pana_la = \&to;
 
     sub downto {
         my ($self, $num, $step) = @_;
@@ -272,7 +273,7 @@ package Corvinus::Types::Number::Number {
                                              );
     }
 
-    *downTo = \&downto;
+    *coboara_la = \&downto;
 
     sub range {
         my ($self, $to, $step) = @_;
@@ -282,15 +283,21 @@ package Corvinus::Types::Number::Number {
           : $self->new(0)->to($self);
     }
 
+    *sir = \&range;
+
     sub sqrt {
         my ($self) = @_;
         $self->new(CORE::sqrt($self->get_value));
     }
 
+    *radical = \&sqrt;
+
     sub root {
         my ($self, $n) = @_;
         $self->new($self->get_value->copy->broot($n->get_value));
     }
+
+    *n_radical = \&root;
 
     sub abs {
         my ($self) = @_;
@@ -299,6 +306,7 @@ package Corvinus::Types::Number::Number {
 
     *pos      = \&abs;
     *positive = \&abs;
+    *absolut = \&abs;
 
     sub hex {
         my ($self) = @_;
@@ -307,6 +315,8 @@ package Corvinus::Types::Number::Number {
     }
 
     *from_hex = \&hex;
+    *din_hex = \&hex;
+    *din_hexadecimal = \&hex;
 
     sub oct {
         my ($self) = @_;
@@ -315,6 +325,8 @@ package Corvinus::Types::Number::Number {
     }
 
     *from_oct = \&oct;
+    *din_oct = \&oct;
+    *din_octal = \&oct;
 
     sub bin {
         my ($self) = @_;
@@ -323,6 +335,8 @@ package Corvinus::Types::Number::Number {
     }
 
     *from_bin = \&bin;
+    *din_bin = \&bin;
+    *din_binar = \&bin;
 
     sub exp {
         my ($self) = @_;
@@ -335,6 +349,8 @@ package Corvinus::Types::Number::Number {
     }
 
     *as_int = \&int;
+    *intreg = \&int;
+    *ca_intreg = \&int;
 
     sub max {
         my ($self, $num) = @_;
@@ -398,6 +414,7 @@ package Corvinus::Types::Number::Number {
         $self->new($self->get_value->copy->bneg);
     }
 
+    *neaga = \&neg;
     *negate = \&neg;
 
     sub not {
@@ -409,6 +426,8 @@ package Corvinus::Types::Number::Number {
         my ($self) = @_;
         Corvinus::Types::String::String->new($self->get_value->sign);
     }
+
+    *semn = \&sign;
 
     sub nan {
         my ($self) = @_;
@@ -441,32 +460,30 @@ package Corvinus::Types::Number::Number {
         Corvinus::Types::Bool::Bool->new($self->get_value->is_zero);
     }
 
-    *isZero = \&is_zero;
+    *e_zero = \&is_zero;
 
     sub is_nan {
         my ($self) = @_;
         Corvinus::Types::Bool::Bool->new($self->get_value->is_nan);
     }
 
-    *isNaN  = \&is_nan;
     *is_NaN = \&is_nan;
+    *nu_e_numar = \&is_nan;
 
     sub is_positive {
         my ($self) = @_;
         Corvinus::Types::Bool::Bool->new($self->get_value->is_pos);
     }
 
-    *isPositive = \&is_positive;
-    *isPos      = \&is_positive;
     *is_pos     = \&is_positive;
+    *e_pozitiv = \&is_positive;
 
     sub is_negative {
         my ($self) = @_;
         Corvinus::Types::Bool::Bool->new($self->get_value->is_neg);
     }
 
-    *isNegative = \&is_negative;
-    *isNeg      = \&is_negative;
+    *e_negativ = \&is_negative;
     *is_neg     = \&is_negative;
 
     sub is_even {
@@ -474,32 +491,30 @@ package Corvinus::Types::Number::Number {
         Corvinus::Types::Bool::Bool->new($self->get_value->as_int->is_even);
     }
 
-    *isEven = \&is_even;
+    *e_par = \&is_even;
 
     sub is_odd {
         my ($self) = @_;
         Corvinus::Types::Bool::Bool->new($self->get_value->as_int->is_odd);
     }
 
-    *isOdd = \&is_odd;
+    *e_impar = \&is_odd;
 
     sub is_inf {
         my ($self) = @_;
         Corvinus::Types::Bool::Bool->new($self->get_value->is_inf);
     }
 
-    *isInf       = \&is_inf;
     *is_infinite = \&is_inf;
-    *isInfinite  = \&is_inf;
+    *e_infinit = \&is_inf;
 
     sub is_integer {
         my ($self) = @_;
         Corvinus::Types::Bool::Bool->new($self->get_value->is_int);
     }
 
-    *isInt     = \&is_integer;
+    *e_intreg = \&is_integer;
     *is_int    = \&is_integer;
-    *isInteger = \&is_integer;
 
     sub rand {
         my ($self, $max) = @_;
@@ -508,15 +523,21 @@ package Corvinus::Types::Number::Number {
           : $self->new(CORE::rand($self->get_value));
     }
 
+    *aleatoriu = \&rand;
+
     sub ceil {
         my ($self) = @_;
         $self->new($self->get_value->copy->bceil);
     }
 
+    *rotunjeste_sus = \&ceil;
+
     sub floor {
         my ($self) = @_;
         $self->new($self->get_value->copy->bfloor);
     }
+
+    *rotunjeste_jos = \&floor;
 
     sub round {
         my ($self, $places) = @_;
@@ -529,6 +550,8 @@ package Corvinus::Types::Number::Number {
                   );
     }
 
+    *rotunjeste = \&round;
+
     sub roundf {
         my ($self, $places) = @_;
         $self->new(
@@ -540,8 +563,8 @@ package Corvinus::Types::Number::Number {
                   );
     }
 
+    *rotunjeste_decimal = \&roundf;
     *fround = \&roundf;
-    *fRound = \&roundf;
 
     sub length {
         my ($self) = @_;
@@ -549,11 +572,14 @@ package Corvinus::Types::Number::Number {
     }
 
     *len = \&length;
+    *lungime = \&length;
 
     sub digit {
         my ($self, $n) = @_;
         $self->new($self->get_value->as_int->digit($n->get_value));
     }
+
+    *cifra = \&digit;
 
     sub nok {
         my ($self, $k) = @_;
@@ -572,10 +598,14 @@ package Corvinus::Types::Number::Number {
         Corvinus::Types::Array::Array->new(($obj) x $self->get_value);
     }
 
+    *de = \&of;
+
     sub times {
         my ($self, $obj) = @_;
         $obj->repeat($self);
     }
+
+    *ori = \&times;
 
     sub to_bin {
         my ($self) = @_;
@@ -584,6 +614,7 @@ package Corvinus::Types::Number::Number {
     }
 
     *as_bin = \&to_bin;
+    *ca_binar = \&to_bin;
 
     sub to_oct {
         my ($self) = @_;
@@ -592,6 +623,7 @@ package Corvinus::Types::Number::Number {
     }
 
     *as_oct = \&to_oct;
+    *ca_octal = \&to_oct;
 
     sub to_hex {
         my ($self) = @_;
@@ -599,6 +631,8 @@ package Corvinus::Types::Number::Number {
         Corvinus::Types::String::String->new(substr(Math::BigInt->new($self->get_value)->as_hex, 2));
     }
 
+    *ca_hex = \&to_hex;
+    *ca_hexadecimal = \&to_hex;
     *as_hex = \&to_hex;
 
     sub is_div {
@@ -606,12 +640,14 @@ package Corvinus::Types::Number::Number {
         Corvinus::Types::Bool::Bool->new($self->get_value % $num->get_value == 0);
     }
 
-    *isDiv = \&is_div;
+    *e_divizbil_de = \&is_div;
 
     sub divides {
         my ($self, $num) = @_;
         Corvinus::Types::Bool::Bool->new($num->get_value % $self->get_value == 0);
     }
+
+    *divide = \&divides;
 
     sub commify {
         my ($self) = @_;
@@ -639,6 +675,8 @@ package Corvinus::Types::Number::Number {
 
         Corvinus::Types::String::String->new(($neg ? '-' : '') . $x);
     }
+
+    *cu_virgule = \&commify;
 
     sub dump {
         my ($self) = @_;

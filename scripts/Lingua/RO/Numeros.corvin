@@ -245,14 +245,14 @@ clasa nou(diacritice            = adev,
         daca (DIGITS.exists(number)) {
             words.append(DIGITS[number]);
         }
-        altdaca (number.to_num! -> is_nan) {
+        altdaca (number.to_num! -> nu_e_numar) {
             return [nu_e_numar];
         }
-        altdaca (number.is_negative) {
+        altdaca (number.e_negativ) {
             words.append(semn_negativ);
             words.append(__METODA__(self, number.abs)...);
         }
-        altdaca (!(number.isInt)) {
+        altdaca (!(number.e_intreg)) {
 
             words.append(__METODA__(self, number.int)...);
             words.append(punct_decimal);
@@ -324,7 +324,7 @@ clasa nou(diacritice            = adev,
                 words.append('și', DIGITS[number % 10 -> int]);
             }
         }
-        altdaca (number.isInf) {
+        altdaca (number.e_infinit) {
             return [infinit];
         }
         altfel {

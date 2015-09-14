@@ -175,6 +175,7 @@ package Corvinus::Types::String::String {
     *upto  = \&to;
     *upTo  = \&to;
     *range = \&to;
+    *sir = \&to;
     *pana_la = \&to;
 
     sub downto($self, $string) {

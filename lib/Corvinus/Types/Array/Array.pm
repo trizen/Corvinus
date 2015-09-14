@@ -1198,6 +1198,7 @@ package Corvinus::Types::Array::Array {
 
     *append = \&push;
     *adauga = \&push;
+    *adauga_in = \&push;
 
     sub unshift {
         my ($self, @args) = @_;

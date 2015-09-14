@@ -8,9 +8,12 @@ package Corvinus::Types::Bool::Ternary {
         bless \%opt, __PACKAGE__;
     }
 
-    *{__PACKAGE__ . '::' . ':'} = sub($self, $code) {
-        Corvinus::Types::Block::Code->new($self->{bool} ? $self->{code} : $code)->run;
-    };
+    {
+        no strict 'refs';
+        *{__PACKAGE__ . '::' . ':'} = sub($self, $code) {
+            Corvinus::Types::Block::Code->new($self->{bool} ? $self->{code} : $code)->run;
+        };
+    }
 };
 
 1

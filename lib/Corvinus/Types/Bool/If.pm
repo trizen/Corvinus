@@ -19,6 +19,9 @@ package Corvinus::Types::Bool::If {
         $self;
     }
 
+    *altdaca = \&alt_daca;
+    *altfel_daca = \&alt_daca;
+
     sub altfel($self, $code) {
         $self->{do_block} = 1;
         $self->do($code);

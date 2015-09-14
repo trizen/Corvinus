@@ -44,8 +44,8 @@ package Corvinus::Parser {
             static_obj_re => qr{\G
                 (?>
                        nul\b                          (?{ state $x = Corvinus::Types::Nil::Nil->new })
-                     | adev(?:arat)?+\b               (?{ state $x = Corvinus::Types::Bool::Bool->true })
-                     | (?:fals|Logic|Bool)\b          (?{ state $x = Corvinus::Types::Bool::Bool->false })
+                     | (true|adev(?:arat)?+)\b        (?{ state $x = Corvinus::Types::Bool::Bool->true })
+                     | (?:false?|Logic|Bool)\b        (?{ state $x = Corvinus::Types::Bool::Bool->false })
                      | continua\b                     (?{ state $x = Corvinus::Types::Block::Continue->new })
                      | BlackHole\b                    (?{ state $x = Corvinus::Types::Black::Hole->new })
                      | Bloc\b                         (?{ state $x = Corvinus::Types::Block::Code->new })
@@ -107,7 +107,7 @@ package Corvinus::Parser {
                 | pentru\b                                        (?{ Corvinus::Types::Block::For->new })
                 | return(?:eaza)?+\b                              (?{ Corvinus::Types::Block::Return->new })
                 | sari\b                                          (?{ Corvinus::Types::Block::Next->new })
-                | opreste\b                                       (?{ Corvinus::Types::Block::Break->new })
+                | stop\b                                          (?{ Corvinus::Types::Block::Break->new })
                 | dat\b                                           (?{ Corvinus::Types::Block::Given->new })
                 | (?:citeste|spune|scrie)\b                       (?{ state $x = Corvinus::Sys::Sys->new })
                 | (?:[*\\&]|\+\+|--|lvalue\b)                     (?{ Corvinus::Variable::Ref->new })
@@ -194,7 +194,7 @@ package Corvinus::Parser {
                 map { $_ => 1 }
                   qw(
                   sari
-                  opreste
+                  stop
                   return returneaza
                   daca
                   cat_timp
@@ -350,14 +350,14 @@ package Corvinus::Parser {
         state $x = require File::Basename;
         my $basename = File::Basename::basename($0);
 
-        my $error = sprintf("%s: %s\n\nFisier: %s\nLinia : %s\nEroare: %s\n\n" . ("~" x 40) . "\n%s\n",
+        my $error = sprintf("%s: %s\n\nFisier: %s\nLinia : %s\nEroare: %s\n\n" . ("~" x 80) . "\n%s\n",
                             $basename,
                             $lines[rand @lines],
                             $self->{file_name} // '-',
                             $self->{line}, join(', ', grep { defined } $opt{error}, $opt{expected}), $error_line,);
 
         my $pointer = ' ' x ($point) . '^' . "\n";
-        die $error, $pointer, '~'x40,"\n";
+        die $error, $pointer, '~'x 80,"\n";
     }
 
     sub find_var {
@@ -1012,21 +1012,20 @@ package Corvinus::Parser {
                    /\G(local|func|clasa)\b\h*/gc
                 || /\G(->)\h*/gc
                 || (exists($self->{current_class})
-                    && /\G(method)\b\h*/gc)
+                    && /\G(metoda)\b\h*/gc)
               ) {
 
                 my $beg_pos = $-[0];
 
-                my $type;
+                my $type = $1;
                 $type = 'class' if $type eq 'clasa';
                 $type = 'method' if $type eq 'metoda';
 
-                $type =
-                    $1 eq '->'
+                $type = ($type eq '->'
                   ? exists($self->{current_class}) && !(exists($self->{current_method}))
                       ? 'method'
                       : 'func'
-                  : $1;
+                  : $type);
 
                 my $name       = '';
                 my $class_name = $self->{class};
@@ -2084,7 +2083,7 @@ package Corvinus::Parser {
                 }
 
                 # XXX: there is no operator precedence
-                if (/\G(?!\h*[=-]>)/ && /\G\h*(?=$self->{operators_re})/ogc) {
+                if (/\G(?!\h*[=-]>)/ && /\G(?=$self->{operators_re})/o) {
                     my ($method, $req_arg, $op_type) = $self->get_method_name(code => $opt{code});
 
                     my $has_arg;
@@ -2288,7 +2287,7 @@ package Corvinus::Parser {
                         my @path = split(/::/, $var_name);
 
                         state $x = require File::Spec;
-                        my $mod_path = File::Spec->catfile(@path[0 .. $#path - 1], $path[-1] . '.sm');
+                        my $mod_path = File::Spec->catfile(@path[0 .. $#path - 1], $path[-1] . '.corvin');
 
                         if (@{$self->{inc}} == 0) {
                             state $y = require File::Basename;

@@ -1,0 +1,45 @@
+#!/usr/bin/ruby
+
+clasa Triunghi(a, b, c) {
+
+    metoda dreptunghic {
+        oricare {
+            a**2 == (b**2 + c**2),
+            b**2 == (a**2 + c**2),
+            c**2 == (a**2 + b**2),
+        }
+    }
+
+    metoda isoscel {
+        oricare {
+            a == b;
+            a == c;
+            b == c;
+        }
+    }
+
+    metoda echilateral {
+        toate {
+            a == b;
+            b == c;
+        }
+    }
+}
+
+var(a, b, c);
+citeste (Num, &a, &b, &c);
+
+var t = Triunghi(a, b, c);
+
+daca (t.echilateral) {
+    spune "triunghi echilateral";
+}
+altdaca (t.isoscel) {
+    spune "triunghi isoscel";
+}
+altdaca (t.dreptunghic) {
+    spune "triunghi dreptunghic";
+}
+altfel {
+    spune "triunghi iregular";
+}

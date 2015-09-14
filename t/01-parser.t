@@ -20,7 +20,7 @@ my @scripts;
 find {
     no_chdir => 1,
     wanted   => sub {
-        if (/\.sf\z/) {
+        if (/\.corvin\z/) {
             push @scripts, $_;
         }
     },

@@ -17,7 +17,7 @@ The Corvinus programming language, implemented entirely in Perl.
 /                 ^^^^^^                 \
 ```
 
-The syntax of the language is in Romanian and it's used only for educational purposes.
+The syntax of the language is in Romanian and it's used only in educational purposes.
 
 
 **LICENSE AND COPYRIGHT**

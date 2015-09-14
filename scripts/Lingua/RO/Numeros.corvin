@@ -62,15 +62,7 @@ BIGNUMS.each { |x|
 # Change 'suta' to 'sută'
 BIGNUMS[0][:sg] = 'sută';
 
-clasa nou(diacritice            = adev,
-          numar_invalid         = nul,
-          semn_negativ          = 'minus',
-          punct_decimal         = 'virgulă',
-          separator             = '',
-          infinit               = 'infinit',
-          nu_e_numar            = 'NaN') {
-
-    # This functions removes irrelevant characters from a text
+# This functions removes irrelevant characters from a text
     func _normalize_text(s) {
 
         # Lowercase and remove the diacritics
@@ -110,6 +102,14 @@ clasa nou(diacritice            = adev,
 
         return num;
     }
+
+clasa nou(diacritice            = adev,
+          numar_invalid         = nul,
+          semn_negativ          = 'minus',
+          punct_decimal         = 'virgulă',
+          separator             = '',
+          infinit               = 'infinit',
+          nu_e_numar            = 'NaN') {
 
     # This function converts a Romanian
     # text-number into a mathematical number.
@@ -267,8 +267,8 @@ clasa nou(diacritice            = adev,
             words.append(__METODA__(self, number.int)...);
         }
         altdaca (number >= BIGNUMS[0]['num']) {
-            0 ... BIGNUMS.offset-1 -> each { |i|
-                var j = BIGNUMS.offset-i;
+            0 ... BIGNUMS.sfarsit-1 -> each { |i|
+                var j = BIGNUMS.sfarsit-i;
 
                 daca (number >= BIGNUMS[j-1]['num'] && (number < BIGNUMS[j]['num'])) {
                     var cat = (number / BIGNUMS[j-1]['num'] -> int);

@@ -246,8 +246,8 @@ package Corvinus::Types::String::String {
     }
 
     *concat = \&append;
-    *uneste = \&append;
     *adauga = \&append;
+    *uneste = \&append;
 
     sub lc($self) {
         $self->new(CORE::lc $self->get_value);
@@ -379,7 +379,7 @@ package Corvinus::Types::String::String {
         __PACKAGE__->new(CORE::join($self->get_value, map { $_->get_value } @rest));
     }
 
-    *uneste = \&join;
+    *imbina = \&join;
 
     sub clear($self) {
         $self->new('');

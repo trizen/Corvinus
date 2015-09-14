@@ -8,4 +8,7 @@ spune str.in_litere_mari;
 spune str.cu_prima_litera_mare;
 
 spune str.extrage(0, 6);
-spune str.contine("este");
+
+daca (str.contine("este")) {
+    spune "Contine <este>";
+}

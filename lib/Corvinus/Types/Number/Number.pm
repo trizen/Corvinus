@@ -416,6 +416,7 @@ package Corvinus::Types::Number::Number {
 
     *neaga = \&neg;
     *negate = \&neg;
+    *negat = \&neg;
 
     sub not {
         my ($self) = @_;
@@ -434,6 +435,7 @@ package Corvinus::Types::Number::Number {
         $self->new(Math::BigFloat->bnan);
     }
 
+    *nen = \&nan;
     *NaN = \&nan;
 
     sub chr {

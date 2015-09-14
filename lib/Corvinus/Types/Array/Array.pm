@@ -611,6 +611,8 @@ package Corvinus::Types::Array::Array {
         $self->new(grep { $code->run($_) } map { $_->get_value } @{$self});
     }
 
+    *select = \&grep;
+    *selecteaza = \&grep;
     *filtreaza = \&grep;
 
     sub group_by {
@@ -1265,25 +1267,6 @@ package Corvinus::Types::Array::Array {
 
     *copiaza = \&copy;
 
-    sub delete_first {
-        my ($self, $obj) = @_;
-
-        my $method = '==';
-        foreach my $i (0 .. $#{$self}) {
-            my $var  = $self->[$i];
-            my $item = $var->get_value;
-            if (ref($item) eq ref($obj)
-                and $item->$method($obj)) {
-                CORE::splice(@{$self}, $i, 1);
-                return Corvinus::Types::Bool::Bool->true;
-            }
-        }
-
-        Corvinus::Types::Bool::Bool->false;
-    }
-
-    *sterge_primul = \&delete_first;
-
     sub delete {
         my ($self, $obj) = @_;
 
@@ -1362,8 +1345,8 @@ package Corvinus::Types::Array::Array {
 
         *{__PACKAGE__ . '::' . '&'}   = \&and;
         *{__PACKAGE__ . '::' . '*'}   = \&multiply;
-        *{__PACKAGE__ . '::' . '<<'}  = \&dropLeft;
-        *{__PACKAGE__ . '::' . '>>'}  = \&dropRight;
+        *{__PACKAGE__ . '::' . '<<'}  = \&shift;
+        *{__PACKAGE__ . '::' . '>>'}  = \&pop;
         *{__PACKAGE__ . '::' . '|'}   = \&or;
         *{__PACKAGE__ . '::' . '^'}   = \&xor;
         *{__PACKAGE__ . '::' . '+'}   = \&concat;

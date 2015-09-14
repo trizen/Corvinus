@@ -113,6 +113,7 @@ package Corvinus::Types::String::String {
     *elimina = \&subtract;
     *exclude = \&subtract;
     *inlatura = \&subtract;
+    *sterge = \&subtract;
 
     {
         my %cache;
@@ -419,9 +420,14 @@ package Corvinus::Types::String::String {
         Corvinus::Types::Bool::Bool->new(printf $self->get_value, @arguments);
     }
 
+    *scrief = \&printf;
+    *scrie_format = \&printf;
+
     sub sprintf($self, @arguments) {
         __PACKAGE__->new(CORE::sprintf $self->get_value, @arguments);
     }
+
+    *formateaza = \&sprintf;
 
     sub _string_or_regex {
         my ($self, $obj) = @_;
@@ -453,6 +459,7 @@ package Corvinus::Types::String::String {
 
     *replace = \&sub;
     *inlocuieste = \&sub;
+    *subst = \&sub;
 
     sub gsub {
         my ($self, $regex, $str) = @_;
@@ -471,7 +478,7 @@ package Corvinus::Types::String::String {
         $self->new($self->get_value =~ s{$search}{$value}gr);
     }
 
-    *gReplace = \&gsub;
+    *substg = \&gsub;
     *inlocuieste_global = \&gsub;
 
     sub _get_captures {

@@ -44,7 +44,6 @@ package Corvinus::Types::Hash::Hash {
 
     *call = \&new;
     *nou = \&new;
-    *noua = \&new;
 
     sub get_value {
         my ($self) = @_;
@@ -70,6 +69,9 @@ package Corvinus::Types::Hash::Hash {
         $self->{__DEFAULT_VALUE__};
     }
 
+    *implicit = \&default;
+    *valoare_implicita = \&default;
+
     sub get {
         my ($self, @keys) = @_;
 
@@ -87,6 +89,7 @@ package Corvinus::Types::Hash::Hash {
     }
 
     *len = \&length;
+    *lungime = \&length;
 
     sub duplicate_of {
         my ($self, $obj) = @_;
@@ -104,8 +107,6 @@ package Corvinus::Types::Hash::Hash {
 
         Corvinus::Types::Bool::Bool->true;
     }
-
-    *duplicateOf = \&duplicate_of;
 
     sub eq {
         my ($self, $obj) = @_;
@@ -125,10 +126,14 @@ package Corvinus::Types::Hash::Hash {
         Corvinus::Types::Bool::Bool->true;
     }
 
+    *este = \&eq;
+
     sub ne {
         my ($self, $obj) = @_;
         $self->eq($obj)->not;
     }
+
+    *nu_este = \&ne;
 
     sub append {
         my ($self, $key, $value) = @_;
@@ -136,6 +141,7 @@ package Corvinus::Types::Hash::Hash {
     }
 
     *add = \&append;
+    *adauga = \&append;
 
     sub delete {
         my ($self, @keys) = @_;
@@ -174,24 +180,22 @@ package Corvinus::Types::Hash::Hash {
         $self;
     }
 
-    *mapVal  = \&mapval;
-    *map_val = \&mapval;
-
     sub select {
         my ($self, $code) = @_;
 
-        my $new_hash = $self->new;
+        my @values;
         $self->_iterate(
             $code,
             sub {
-                $new_hash->append(@_);
+                push @values, @_;
             }
         );
 
-        $new_hash;
+        $self->new(@values);
     }
 
     *grep = \&select;
+    *selecteaza = \&select;
 
     sub delete_if {
         my ($self, $code) = @_;
@@ -221,6 +225,7 @@ package Corvinus::Types::Hash::Hash {
     }
 
     *merge = \&concat;
+    *uneste = \&concat;
 
     sub merge_values {
         my ($self, $obj) = @_;
@@ -234,17 +239,21 @@ package Corvinus::Types::Hash::Hash {
         $self;
     }
 
-    *mergeValues = \&merge_values;
+    *uneste_valorile = \&merge_values;
 
     sub keys {
         my ($self) = @_;
         Corvinus::Types::Array::Array->new(map { Corvinus::Types::String::String->new($_) } keys %{$self->{data}});
     }
 
+    *chei = \&keys;
+
     sub values {
         my ($self) = @_;
         Corvinus::Types::Array::Array->new(map { $_->get_value } values %{$self->{data}});
     }
+
+    *valori = \&values;
 
     sub each_value {
         my ($self, $code) = @_;
@@ -258,6 +267,8 @@ package Corvinus::Types::Hash::Hash {
         $code;
     }
 
+    *fiecare_valoare = \&each_value;
+
     sub each_key {
         my ($self, $code) = @_;
 
@@ -269,6 +280,8 @@ package Corvinus::Types::Hash::Hash {
 
         $code;
     }
+
+    *fiecare_cheie = \&each_key;
 
     sub each {
         my ($self, $obj) = @_;
@@ -293,6 +306,7 @@ package Corvinus::Types::Hash::Hash {
     }
 
     *each_pair = \&each;
+    *fiecare = \&each;
 
     sub sort_by {
         my ($self, $code) = @_;
@@ -310,6 +324,8 @@ package Corvinus::Types::Hash::Hash {
         );
     }
 
+    *sorteaza_dupa = \&sort_by;
+
     sub to_a {
         my ($self) = @_;
         Corvinus::Types::Array::Array->new(
@@ -321,14 +337,15 @@ package Corvinus::Types::Hash::Hash {
 
     *pairs    = \&to_a;
     *to_array = \&to_a;
+    *ca_lista = \&to_a;
 
     sub exists {
         my ($self, $key) = @_;
         Corvinus::Types::Bool::Bool->new(exists $self->{data}{$key});
     }
 
+    *contine = \&exists;
     *has_key  = \&exists;
-    *haskey   = \&exists;
     *contains = \&exists;
 
     sub flip {
@@ -342,12 +359,16 @@ package Corvinus::Types::Hash::Hash {
         $new_hash;
     }
 
+    *inverseaza = \&flip;
+
     sub copy {
         my ($self) = @_;
 
         state $x = require Storable;
         Storable::dclone($self);
     }
+
+    *copiaza = \&copy;
 
     sub dump {
         my ($self) = @_;
@@ -389,7 +410,7 @@ package Corvinus::Types::Hash::Hash {
         no strict 'refs';
 
         *{__PACKAGE__ . '::' . '+'}   = \&concat;
-        *{__PACKAGE__ . '::' . '==='} = \&duplicateOf;
+        *{__PACKAGE__ . '::' . '==='} = \&duplicate_of;
         *{__PACKAGE__ . '::' . '=='}  = \&eq;
         *{__PACKAGE__ . '::' . '!='}  = \&ne;
         *{__PACKAGE__ . '::' . ':'}   = \&new;

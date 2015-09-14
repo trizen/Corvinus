@@ -18,6 +18,8 @@ package Corvinus::Convert::Convert {
 
     *to_str    = \&to_s;
     *to_string = \&to_s;
+    *ca_text = \&to_s;
+    *ca_string = \&to_s;
 
     sub to_obj($self, $obj) {
         return $self if ref($self) eq ref($obj);

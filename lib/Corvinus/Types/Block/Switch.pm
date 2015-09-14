@@ -46,7 +46,7 @@ package Corvinus::Types::Block::Switch {
     *else = \&default;
     *altfel = \&default;
 
-    sub end() {
+    sub end($self) {
         Corvinus::Types::Black::Hole->new;
     }
 

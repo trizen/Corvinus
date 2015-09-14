@@ -17,14 +17,14 @@ package Corvinus::Object::Object {
         no strict 'refs';
 
         # Logical AND
-        *{__PACKAGE__ . '::' . '&&'} = sub($x, $y) {
+        *{__PACKAGE__ . '::' . '&&'} = *{__PACKAGE__ . '::' . 'si'} = sub($x, $y) {
             $x
               ? Corvinus::Types::Block::Code->new($y)->run
               : $x;
         };
 
         # Logical OR
-        *{__PACKAGE__ . '::' . '||'} = sub($x, $y) {
+        *{__PACKAGE__ . '::' . '||'} = *{__PACKAGE__ . '::' . 'sau'} =  sub($x, $y) {
             $x
               ? $x
               : Corvinus::Types::Block::Code->new($y)->run;

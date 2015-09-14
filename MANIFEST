@@ -82,6 +82,7 @@ META.json
 META.yml
 README.md
 scripts/citeste_dosar.corvin
+scripts/daca_si_sau.corvin
 scripts/determina_triunghiul.corvin
 scripts/factorial_iterativ.corvin
 scripts/Lingua/RO/Numeros.corvin

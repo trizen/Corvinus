@@ -14,7 +14,9 @@ package Corvinus::Exec {
             # `0` for composed operators
             lazy_ops => {
                          '||'    => 1,
+                         'sau'   => 1,
                          '&&'    => 1,
+                         'si'    => 1,
                          ':='    => 0,
                          '||='   => 0,
                          '&&='   => 0,

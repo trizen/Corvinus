@@ -283,6 +283,7 @@ package Corvinus::Parser {
                     (?(DEFINE)
                         (?<ops>
                               @operators
+                            | (?:si|sau)\b
                             | \p{Block: Mathematical_Operators}
                             | \p{Block: Supplemental_Mathematical_Operators}
                         )
@@ -501,11 +502,6 @@ package Corvinus::Parser {
         # Implicit end of statement
         ($self->parse_whitespace(code => $opt{code}))[1] && return;
 
-        # Alpha-numeric method name
-        if (/\G($self->{method_name_re})/goc) {
-            return ($1, 0, 'op');
-        }
-
         # Operator-like method name
         if (m{\G$self->{operators_re}}goc) {
             my ($key) = keys(%+);
@@ -518,6 +514,11 @@ package Corvinus::Parser {
                     ),
                     $key
                    );
+        }
+
+        # Alpha-numeric method name
+        if (/\G($self->{method_name_re})/goc) {
+            return ($1, 0, 'op');
         }
 
         # Method name as expression

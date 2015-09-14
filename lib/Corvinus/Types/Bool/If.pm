@@ -14,13 +14,14 @@ package Corvinus::Types::Bool::If {
         $self;
     }
 
-    sub alt_daca($self, @args) {
+    sub sau_daca($self, @args) {
         $self->{do_block} = $args[-1] ? 1 : 0;
         $self;
     }
 
-    *altdaca = \&alt_daca;
-    *altfel_daca = \&alt_daca;
+    *altfel_daca = \&sau_daca;
+    *altdaca = \&sau_daca;
+    *alt_daca = \&sau_daca;
 
     sub altfel($self, $code) {
         $self->{do_block} = 1;

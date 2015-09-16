@@ -24,7 +24,7 @@ package Corvinus::Object::Object {
         };
 
         # Logical OR
-        *{__PACKAGE__ . '::' . '||'} = *{__PACKAGE__ . '::' . 'sau'} =  sub($x, $y) {
+        *{__PACKAGE__ . '::' . '||'} = *{__PACKAGE__ . '::' . 'sau'} = sub($x, $y) {
             $x
               ? $x
               : Corvinus::Types::Block::Code->new($y)->run;
@@ -157,7 +157,8 @@ package Corvinus::Object::Object {
                 return $second->contains($first);
             }
 
-            Corvinus::Types::Bool::Bool->false;
+            state $method = '==';
+            $first->$method($second);
         };
 
         # Negation of smart match

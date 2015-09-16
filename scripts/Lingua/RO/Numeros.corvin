@@ -319,10 +319,10 @@ clasa nou(diacritice            = adev,
                     }
 
                     dat(cat)
-                        cand(1) {
+                        este(1) {
                             words += [BIGNUMS[j-1][:fem] ? 'o' : 'un', BIGNUMS[j-1][:sg]];
                         }
-                        cand(2) {
+                        este(2) {
                             words += ['două', BIGNUMS[j-1][:pl]];
                         }
                         altfel {
@@ -344,10 +344,10 @@ clasa nou(diacritice            = adev,
             var cat = intreg(number / 10);
 
             dat(cat)
-                cand(2) {
+                este(2) {
                     words.adauga('douăzeci');
                 }
-                cand(6) {
+                este(6) {
                     words.adauga('șaizeci');
                 }
                 altfel {

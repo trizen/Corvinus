@@ -10,17 +10,26 @@ package Corvinus::Types::Block::Switch {
     }
 
     sub when($self, $arg) {
-        if (ref($self->{obj}) eq ref($arg)) {
+        state $method = '~~';
+        if ($arg->$method($self->{obj})->get_value) {
+            $self->{do_block} = 1;
+        }
+        $self;
+    }
+
+    *cand = \&when;
+
+    sub exact($self, $arg) {
+        if (ref($arg) eq ref($self->{obj})) {
             state $method = '==';
             if ($self->{obj}->$method($arg)->get_value) {
                 $self->{do_block} = 1;
             }
         }
-
         $self;
     }
 
-    *cand = \&when;
+    *este = \&exact;
 
     sub case($self, $arg) {
         if (ref($arg) eq 'Corvinus::Types::Bool::Bool') {
@@ -29,9 +38,8 @@ package Corvinus::Types::Block::Switch {
             }
         }
         else {
-            return $self->when($arg);
+            return $self->exact($arg);
         }
-
         $self;
     }
 
@@ -43,7 +51,7 @@ package Corvinus::Types::Block::Switch {
         $self->do($code);
     }
 
-    *else = \&default;
+    *else   = \&default;
     *altfel = \&default;
 
     sub end($self) {
@@ -58,8 +66,9 @@ package Corvinus::Types::Block::Switch {
 
     {
         no strict 'refs';
-        *{__PACKAGE__ . '::' . '>'} = \&when;
+        *{__PACKAGE__ . '::' . '~'} = \&when;
         *{__PACKAGE__ . '::' . '?'} = \&case;
+        *{__PACKAGE__ . '::' . '>'} = \&exact;
         *{__PACKAGE__ . '::' . ':'} = \&default;
     }
 

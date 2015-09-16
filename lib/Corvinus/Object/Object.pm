@@ -94,6 +94,24 @@ package Corvinus::Object::Object {
                 }
             }
 
+            # First is RangeNumber
+            if ($f_type eq 'Corvinus::Types::Array::RangeNumber') {
+
+                # RangeNumber ~~ Number
+                if ($s_type eq 'Corvinus::Types::Number::Number') {
+                    return $first->contains($second);
+                }
+            }
+
+            # First is RangeString
+            if ($f_type eq 'Corvinus::Types::Array::RangeString') {
+
+                # RangeString ~~ String
+                if ($s_type eq 'Corvinus::Types::String::String') {
+                    return $first->contains($second);
+                }
+            }
+
             # First is Array
             if ($f_type eq 'Corvinus::Types::Array::Array') {
 

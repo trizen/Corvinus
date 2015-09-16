@@ -2062,6 +2062,18 @@ package Corvinus::Parser {
                     push @{$struct{$self->{class}}[-1]{call}}, @{$methods};
                 }
 
+                if (/\G(?=\()/) {
+                    my $arg = $self->parse_arguments(code => $opt{code});
+
+                    push @{$struct{$self->{class}}[-1]{call}},
+                      {
+                        method => 'call',
+                        (%{$arg} ? (arg => [$arg]) : ())
+                      };
+
+                    redo;
+                }
+
                 if (/\G(?=\[)/) {
                     $struct{$self->{class}}[-1]{self} = {
                             $self->{class} => [
@@ -2495,11 +2507,8 @@ package Corvinus::Parser {
                     if (defined $arg) {
                         push @{$struct{$self->{class}}[-1]{call}}, {method => 'do', arg => [$arg]};
 
-                        if (/\G\h*(\R\h*)?(?=$self->{method_name_re}|$self->{operators_re})/goc) {
-
-                            if (defined $1) {
-                                $self->{line}++;
-                            }
+                        if (not(($self->parse_whitespace(code => $opt{code}))[1])
+                            and /(?=$self->{method_name_re}|$self->{operators_re})/o) {
 
                             my $code = '. ' . substr($_, pos);
                             my $methods = $self->parse_methods(code => \$code);

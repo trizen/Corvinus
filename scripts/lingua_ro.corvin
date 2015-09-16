@@ -2,7 +2,9 @@
 
 include Lingua::RO::Numeros;
 
-var lingua = Lingua::RO::Numeros::nou();
+var lingua = Lingua::RO::Numeros::nou(
+    separator: ','
+);
 
 bucla {
     var numar;

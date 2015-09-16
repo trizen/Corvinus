@@ -28,11 +28,11 @@ package Corvinus::Object::Unary {
         };
 
         *{__PACKAGE__ . '::' . '?'} = sub($, $obj) {
-            Corvinus::Types::Bool::Bool->new($obj->get_value);
+            Corvinus::Types::Bool::Bool->new($obj);
         };
 
         *{__PACKAGE__ . '::' . '!'} = sub($, $obj) {
-            Corvinus::Types::Bool::Bool->new(not $obj->get_value);
+            Corvinus::Types::Bool::Bool->new(not $obj);
         };
 
         *{__PACKAGE__ . '::' . '>'} = sub($, @args) {
